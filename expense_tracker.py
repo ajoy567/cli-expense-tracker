@@ -1,10 +1,12 @@
 def add_expense(expenses, expense_id, amount, category, description):
+    
     """
     Add a new expense to the expenses dictionary using a unique expense ID.
 
     Stores the expense amount, category, and description, then updates the CSV
     file so the data persists after the program is closed.
     """
+    
     expenses[expense_id] = {
         "Amount": amount,
         "Category": category,
@@ -14,11 +16,13 @@ def add_expense(expenses, expense_id, amount, category, description):
 
 
 def view_expense(expenses):
+    
     """
     Display all expenses currently stored in the expenses dictionary.
 
     Shows each expense ID along with its associated details in a user-friendly format.
     """
+    
     if not expenses:
         print("No expenses recorded yet.")
         return
@@ -28,18 +32,21 @@ def view_expense(expenses):
 
 
 def save_csv(expenses):
+    
     """
     Save all expenses from the expenses dictionary to a CSV file.
 
     Converts the in-memory expense data into a file format so that expenses
     can be restored when the program is run again.
     """
+    
     with open("expense_tracker.csv", "w") as file:
         for expense_id, details in expenses.items():
             file.write(f"{expense_id},{details['Amount']},{details['Category']},{details['Description']}\n")
 
 
 def load_csv():
+    
     """
     Load expense data from the CSV file,
     reconstruct the expenses dictionary,
@@ -48,6 +55,7 @@ def load_csv():
     Returns:
         dict: {expense_id: {"Amount": ..., "Category": ..., "Description": ...}}
     """
+    
     try:
         with open("expense_tracker.csv", 'r') as file:
             data = file.read()
@@ -73,9 +81,11 @@ def load_csv():
 
 
 def summary(expenses):
+    
     """
     Show the total spent and the total per category.
     """
+    
     if not expenses:
         print("No expenses recorded yet.")
         return
