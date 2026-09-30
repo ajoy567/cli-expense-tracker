@@ -23,7 +23,7 @@ python expense_tracker.py
 
 When the app starts, you'll see a menu:
 
-```
+```text
 1. Add Expense
 2. View Expense
 3. Summary
@@ -34,14 +34,14 @@ Type the number of your choice and follow the prompts.
 
 ## Example
 
-```
+```text
 1. brought groceries | 450 | weekly vegetables
 2. Transport | 120 | bus pass
 ```
 
 ## Project Structure
 
-```
+```text
 expense_tracker.py     # main program
 expense_tracker.csv    # created automatically when you add your first expense
 ```
