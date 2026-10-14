@@ -27,7 +27,9 @@ When the app starts, you'll see a menu:
 1. Add Expense
 2. View Expense
 3. Summary
-4. Exit
+4. Edit Expense
+5. Delete Expense
+6. Exit
 ```
 
 Type the number of your choice and follow the prompts.
@@ -54,7 +56,6 @@ expense_tracker.csv    # created automatically when you add your first expense
 
 ## Future Improvements
 
-- Delete and edit expenses
 - Add dates to each expense
 - Use Python's `csv` module for more robust file handling
 - Input validation for categories

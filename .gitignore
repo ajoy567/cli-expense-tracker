@@ -1,0 +1,5 @@
+expense_tracker.csv
+__pycache__/
+*.pyc
+.venv/
+venv/
