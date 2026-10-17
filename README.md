@@ -56,6 +56,5 @@ expense_tracker.csv    # created automatically when you add your first expense
 
 ## Future Improvements
 
-- Add dates to each expense
 - Use Python's `csv` module for more robust file handling
 - Input validation for categories
