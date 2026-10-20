@@ -102,11 +102,6 @@ def delete_expense(expenses, expense_id):
 # ------------------------------- filtering --------------------------------
 
 def filter_expenses(expenses, start_date="", end_date="", category="", keyword=""):
-    """
-    Return a subset of expenses matching the given filters.
-    Blank filters are ignored. Date comparisons work because ISO dates
-    (YYYY-MM-DD) sort correctly as plain strings.
-    """
     results = {}
     for expense_id, details in expenses.items():
         expense_date = details.get("Date", "")
@@ -164,6 +159,78 @@ def summary(expenses):
         print(f"  {category}: {amount:.2f}")
 
 
+def monthly_summary(expenses):
+    """
+    Show a per-month breakdown: count + total for each YYYY-MM.
+    Then optionally show a category breakdown for one chosen month.
+    Expenses with no date are reported separately and excluded.
+    """
+    if not expenses:
+        print("No expenses recorded yet.")
+        return
+
+    by_month = {}
+    undated = []
+
+    for expense_id, details in expenses.items():
+        month = details.get("Date", "")[:7]
+        if not month:
+            undated.append(expense_id)
+            continue
+
+        if month not in by_month:
+            by_month[month] = {"_total": 0.0, "_count": 0, "categories": {}}
+
+        by_month[month]["_total"] += details["Amount"]
+        by_month[month]["_count"] += 1
+        cat = details["Category"]
+        by_month[month]["categories"][cat] = (
+            by_month[month]["categories"].get(cat, 0.0) + details["Amount"]
+        )
+
+    if not by_month:
+        print("No dated expenses to summarize.")
+        return
+
+    print("\n--- Monthly Summary ---")
+    print(f"{'Month':<10} {'Expenses':>8} {'Total':>12}")
+    print("-" * 32)
+
+    grand_total = 0.0
+    grand_count = 0
+    for month in sorted(by_month.keys()):
+        info = by_month[month]
+        print(f"{month:<10} {info['_count']:>8} {info['_total']:>12.2f}")
+        grand_total += info["_total"]
+        grand_count += info["_count"]
+
+    print("-" * 32)
+    print(f"{'TOTAL':<10} {grand_count:>8} {grand_total:>12.2f}")
+
+    if undated:
+        undated_total = sum(expenses[i]["Amount"] for i in undated)
+        print(
+            f"\n(+{len(undated)} expense(s) with unknown date, "
+            f"total {undated_total:.2f} — not included above)"
+        )
+
+    month_choice = input(
+        "\nCategory breakdown for a month? Enter YYYY-MM (blank to skip) : "
+    ).strip()
+    if not month_choice:
+        return
+
+    if month_choice not in by_month:
+        print(f"No data for {month_choice}.")
+        return
+
+    info = by_month[month_choice]
+    print(f"\n--- {month_choice} breakdown ---")
+    for category in sorted(info["categories"].keys()):
+        print(f"  {category}: {info['categories'][category]:.2f}")
+    print(f"  TOTAL: {info['_total']:.2f}")
+
+
 # ------------------------------- input helpers ----------------------------
 
 def prompt_amount(prompt_text="Enter the amount : "):
@@ -214,7 +281,6 @@ def prompt_date(prompt_text="Enter date (YYYY-MM-DD) [today] : "):
 
 
 def prompt_optional_date(prompt_text):
-    """Like prompt_date, but blank input means 'no filter'."""
     while True:
         raw = input(prompt_text).strip()
         if not raw:
@@ -238,9 +304,10 @@ def main():
         print("2. View Expense")
         print("3. Search / Filter")
         print("4. Summary")
-        print("5. Edit Expense")
-        print("6. Delete Expense")
-        print("7. Exit")
+        print("5. Monthly Summary")
+        print("6. Edit Expense")
+        print("7. Delete Expense")
+        print("8. Exit")
 
         choice = input("Enter your choice : ").strip()
 
@@ -282,6 +349,9 @@ def main():
                 summary(expenses)
 
             case '5':
+                monthly_summary(expenses)
+
+            case '6':
                 if not expenses:
                     print("No expenses to edit.")
                     continue
@@ -327,7 +397,7 @@ def main():
                 edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date)
                 print("Expense updated!")
 
-            case '6':
+            case '7':
                 if not expenses:
                     print("No expenses to delete.")
                     continue
@@ -340,7 +410,7 @@ def main():
                 else:
                     print("Delete cancelled.")
 
-            case '7':
+            case '8':
                 print("Exiting the app. Goodbye!")
                 break
 
