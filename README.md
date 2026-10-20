@@ -48,13 +48,4 @@ expense_tracker.py     # main program
 expense_tracker.csv    # created automatically when you add your first expense
 ```
 
-## What I Learned
-
-- Passing data between functions instead of creating new copies
-- Reading and writing CSV files for persistence
-- Building a menu-driven CLI with a `while` loop and `match`/`case`
-
 ## Future Improvements
-
-- Use Python's `csv` module for more robust file handling
-- Input validation for categories

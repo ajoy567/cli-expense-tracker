@@ -9,10 +9,6 @@ FIELDNAMES = ["ID", "Amount", "Category", "Description", "Date"]
 # ------------------------------- persistence ------------------------------
 
 def save_csv(expenses):
-    """
-    Save all expenses to the CSV file using the csv module.
-    Date is written as YYYY-MM-DD (empty string if unknown).
-    """
     with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow(FIELDNAMES)
@@ -27,15 +23,6 @@ def save_csv(expenses):
 
 
 def load_csv():
-    """
-    Load expenses from the CSV file.
-
-    Supports both:
-      - Old format: ID, Amount, Category, Description              (4 columns)
-      - New format: ID, Amount, Category, Description, Date        (5 columns)
-
-    Old rows get an empty Date ("") which is displayed as "unknown".
-    """
     if not os.path.exists(CSV_FILE):
         return {}
 
@@ -49,7 +36,7 @@ def load_csv():
 
     start = 0
     if rows[0] and rows[0][0].strip().lower() == "id":
-        start = 1  # skip header
+        start = 1
 
     for row in rows[start:]:
         if len(row) < 4:
@@ -63,7 +50,6 @@ def load_csv():
         category = row[2].strip()
         description = row[3].strip()
 
-        # Date is the 5th column, optional for legacy rows.
         expense_date = ""
         if len(row) >= 5:
             raw_date = row[4].strip()
@@ -71,7 +57,7 @@ def load_csv():
                 try:
                     expense_date = date.fromisoformat(raw_date).isoformat()
                 except ValueError:
-                    expense_date = ""  # invalid date → treat as unknown
+                    expense_date = ""
 
         result[expense_id] = {
             "Amount": round(amount, 2),
@@ -113,11 +99,41 @@ def delete_expense(expenses, expense_id):
     return False
 
 
+# ------------------------------- filtering --------------------------------
+
+def filter_expenses(expenses, start_date="", end_date="", category="", keyword=""):
+    """
+    Return a subset of expenses matching the given filters.
+    Blank filters are ignored. Date comparisons work because ISO dates
+    (YYYY-MM-DD) sort correctly as plain strings.
+    """
+    results = {}
+    for expense_id, details in expenses.items():
+        expense_date = details.get("Date", "")
+
+        if start_date:
+            if not expense_date or expense_date < start_date:
+                continue
+        if end_date:
+            if not expense_date or expense_date > end_date:
+                continue
+        if category:
+            if details["Category"].lower() != category.lower():
+                continue
+        if keyword:
+            if keyword.lower() not in details["Description"].lower():
+                continue
+
+        results[expense_id] = details
+
+    return results
+
+
 # ------------------------------- views ------------------------------------
 
-def view_expense(expenses):
+def view_expense(expenses, empty_message="No expenses recorded yet."):
     if not expenses:
-        print("No expenses recorded yet.")
+        print(empty_message)
         return
 
     for expense_id, details in expenses.items():
@@ -187,7 +203,6 @@ def prompt_existing_id(expenses, prompt_text="Enter the expense ID : "):
 
 
 def prompt_date(prompt_text="Enter date (YYYY-MM-DD) [today] : "):
-    """Ask for a date. Blank input = today's date."""
     while True:
         raw = input(prompt_text).strip()
         if not raw:
@@ -196,6 +211,18 @@ def prompt_date(prompt_text="Enter date (YYYY-MM-DD) [today] : "):
             return date.fromisoformat(raw).isoformat()
         except ValueError:
             print("Invalid date. Please use YYYY-MM-DD (e.g. 2026-10-17). Try again...")
+
+
+def prompt_optional_date(prompt_text):
+    """Like prompt_date, but blank input means 'no filter'."""
+    while True:
+        raw = input(prompt_text).strip()
+        if not raw:
+            return ""
+        try:
+            return date.fromisoformat(raw).isoformat()
+        except ValueError:
+            print("Invalid date. Use YYYY-MM-DD, or press Enter to skip. Try again...")
 
 
 # ------------------------------- main loop --------------------------------
@@ -209,10 +236,11 @@ def main():
         print("\n------------------------------ Your Options ------------------------------")
         print("1. Add Expense")
         print("2. View Expense")
-        print("3. Summary")
-        print("4. Edit Expense")
-        print("5. Delete Expense")
-        print("6. Exit")
+        print("3. Search / Filter")
+        print("4. Summary")
+        print("5. Edit Expense")
+        print("6. Delete Expense")
+        print("7. Exit")
 
         choice = input("Enter your choice : ").strip()
 
@@ -230,9 +258,30 @@ def main():
                 view_expense(expenses)
 
             case '3':
-                summary(expenses)
+                if not expenses:
+                    print("No expenses to search.")
+                    continue
+
+                print("Leave any field blank to ignore that filter.")
+                start_date = prompt_optional_date("From date (YYYY-MM-DD) : ")
+                end_date = prompt_optional_date("To date   (YYYY-MM-DD) : ")
+                category = input("Category (blank = any) : ").strip()
+                keyword = input("Keyword in description (blank = any) : ").strip()
+
+                results = filter_expenses(expenses, start_date, end_date, category, keyword)
+
+                if not results:
+                    print("No matching expenses.")
+                    continue
+
+                view_expense(results, empty_message="No matching expenses.")
+                total = sum(d["Amount"] for d in results.values())
+                print(f"\n{len(results)} matching expense(s), total: {total:.2f}")
 
             case '4':
+                summary(expenses)
+
+            case '5':
                 if not expenses:
                     print("No expenses to edit.")
                     continue
@@ -241,7 +290,6 @@ def main():
                 current = expenses[expense_id]
                 print("Press Enter on any field to keep the current value.")
 
-                # Amount
                 while True:
                     raw = input(f"New amount [{current['Amount']:.2f}] : ").strip()
                     if not raw:
@@ -258,15 +306,12 @@ def main():
                     new_amount = round(val, 2)
                     break
 
-                # Category
                 raw = input(f"New category [{current['Category']}] : ").strip()
                 new_category = raw if raw else current["Category"]
 
-                # Description
                 raw = input(f"New description [{current['Description']}] : ").strip()
                 new_description = raw if raw else current["Description"]
 
-                # Date
                 current_date_display = current.get("Date") or "unknown"
                 while True:
                     raw = input(f"New date (YYYY-MM-DD) [{current_date_display}] : ").strip()
@@ -282,7 +327,7 @@ def main():
                 edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date)
                 print("Expense updated!")
 
-            case '5':
+            case '6':
                 if not expenses:
                     print("No expenses to delete.")
                     continue
@@ -295,7 +340,7 @@ def main():
                 else:
                     print("Delete cancelled.")
 
-            case '6':
+            case '7':
                 print("Exiting the app. Goodbye!")
                 break
 
