@@ -1,9 +1,41 @@
 import csv
 import os
-from datetime import date
+from datetime import date, datetime
 
 CSV_FILE = "expense_tracker.csv"
+LOG_FILE = "activity.log"
 FIELDNAMES = ["ID", "Amount", "Category", "Description", "Date"]
+
+
+# ------------------------------- logging ----------------------------------
+
+def log_action(action, message):
+    """
+    Append one line to the activity log.
+    Format:  YYYY-MM-DD HH:MM:SS  ACTION  message
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a", encoding="utf-8") as file:
+        file.write(f"{timestamp}  {action:<6}  {message}\n")
+
+
+def view_recent_activity(n=10):
+    """Show the last n entries from activity.log."""
+    if not os.path.exists(LOG_FILE):
+        print("No activity recorded yet.")
+        return
+
+    with open(LOG_FILE, "r", encoding="utf-8") as file:
+        lines = file.readlines()
+
+    if not lines:
+        print("No activity recorded yet.")
+        return
+
+    recent = lines[-n:]
+    print(f"\n--- Last {len(recent)} activity entries ---")
+    for line in recent:
+        print(line.rstrip())
 
 
 # ------------------------------- persistence ------------------------------
@@ -79,9 +111,27 @@ def add_expense(expenses, expense_id, amount, category, description, expense_dat
         "Date": expense_date,
     }
     save_csv(expenses)
+    log_action(
+        "ADD",
+        f"id={expense_id} amount={amount:.2f} category={category} "
+        f"date={expense_date or 'unknown'}"
+    )
 
 
 def edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date):
+    old = expenses.get(expense_id, {})
+
+    # Build a diff so the log shows only what actually changed.
+    changes = []
+    if round(old.get("Amount", 0.0), 2) != round(new_amount, 2):
+        changes.append(f"amount {old.get('Amount', 0.0):.2f} -> {new_amount:.2f}")
+    if old.get("Category") != new_category:
+        changes.append(f"category {old.get('Category')} -> {new_category}")
+    if old.get("Description") != new_description:
+        changes.append(f"description '{old.get('Description')}' -> '{new_description}'")
+    if old.get("Date", "") != new_date:
+        changes.append(f"date {old.get('Date') or 'unknown'} -> {new_date or 'unknown'}")
+
     expenses[expense_id] = {
         "Amount": new_amount,
         "Category": new_category,
@@ -90,11 +140,22 @@ def edit_expense(expenses, expense_id, new_amount, new_category, new_description
     }
     save_csv(expenses)
 
+    if changes:
+        log_action("EDIT", f"id={expense_id} " + "; ".join(changes))
+    else:
+        log_action("EDIT", f"id={expense_id} (no changes)")
+
 
 def delete_expense(expenses, expense_id):
     if expense_id in expenses:
+        old = expenses[expense_id]
         del expenses[expense_id]
         save_csv(expenses)
+        log_action(
+            "DELETE",
+            f"id={expense_id} amount={old['Amount']:.2f} category={old['Category']} "
+            f"date={old.get('Date') or 'unknown'} description='{old['Description']}'"
+        )
         return True
     return False
 
@@ -160,11 +221,6 @@ def summary(expenses):
 
 
 def monthly_summary(expenses):
-    """
-    Show a per-month breakdown: count + total for each YYYY-MM.
-    Then optionally show a category breakdown for one chosen month.
-    Expenses with no date are reported separately and excluded.
-    """
     if not expenses:
         print("No expenses recorded yet.")
         return
@@ -305,9 +361,10 @@ def main():
         print("3. Search / Filter")
         print("4. Summary")
         print("5. Monthly Summary")
-        print("6. Edit Expense")
-        print("7. Delete Expense")
-        print("8. Exit")
+        print("6. Recent Activity")
+        print("7. Edit Expense")
+        print("8. Delete Expense")
+        print("9. Exit")
 
         choice = input("Enter your choice : ").strip()
 
@@ -352,6 +409,9 @@ def main():
                 monthly_summary(expenses)
 
             case '6':
+                view_recent_activity(10)
+
+            case '7':
                 if not expenses:
                     print("No expenses to edit.")
                     continue
@@ -397,7 +457,7 @@ def main():
                 edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date)
                 print("Expense updated!")
 
-            case '7':
+            case '8':
                 if not expenses:
                     print("No expenses to delete.")
                     continue
@@ -410,7 +470,7 @@ def main():
                 else:
                     print("Delete cancelled.")
 
-            case '8':
+            case '9':
                 print("Exiting the app. Goodbye!")
                 break
 
