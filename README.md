@@ -11,7 +11,7 @@ A Python command-line app to track expenses, saved locally to CSV so your data p
 - Search / Filter by date range, category, or keyword
 - See a summary: total spent, total per category, and date range
 - Monthly summary with per-month totals and category breakdown
-- Edit and Delete existing expenses
+- Edit or Delete existing expenses
 - Activity log (`activity.log`) keeps track of adds, edits, and deletes
 
 ## Requirements
