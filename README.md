@@ -1,13 +1,16 @@
 # CLI Expense Tracker
 
-A Python command-line app to track expenses, saved to a CSV file so your data persists between runs.
+A Python command-line app to track expenses, saved locally to CSV so your data persists between runs.
 
 ## Features
 
-- Add an expense with amount, category, and description
+- Add expenses with amount, category, description, and date
 - View all saved expenses
-- See a summary: total spent and total per category
-- Data is stored in `expense_tracker.csv` and loaded automatically on startup
+- Search / Filter by date range, category, or keyword
+- See a summary: total spent, total per category, and date range
+- Monthly summary with per-month totals and category breakdown
+- Edit and Delete existing expenses
+- Activity log (`activity.log`) keeps track of adds, edits, and deletes
 
 ## Requirements
 
@@ -15,37 +18,7 @@ A Python command-line app to track expenses, saved to a CSV file so your data pe
 
 ## How to Run
 
+From the project root (the folder containing `main.py`):
+
 ```bash
-python expense_tracker.py
-```
-
-## Usage
-
-When the app starts, you'll see a menu:
-
-```text
-1. Add Expense
-2. View Expense
-3. Summary
-4. Edit Expense
-5. Delete Expense
-6. Exit
-```
-
-Type the number of your choice and follow the prompts.
-
-## Example
-
-```text
-1. brought groceries | 450 | weekly vegetables
-2. Transport | 120 | bus pass
-```
-
-## Project Structure
-
-```text
-expense_tracker.py     # main program
-expense_tracker.csv    # created automatically when you add your first expense
-```
-
-## Future Improvements
+python main.py
