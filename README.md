@@ -1,5 +1,7 @@
 # CLI Expense Tracker
 
+![Python application](https://github.com/ajoy567/cli-expense-tracker/actions/workflows/python-app.yml/badge.svg)
+
 A Python command-line app to track expenses, saved locally to CSV so your data persists between runs.
 
 ## Features
