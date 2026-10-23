@@ -1,7 +1,6 @@
-import pytest
+import pytest  
 from unittest.mock import patch
 
-# Import the functions we want to test
 from expense_tracker.reports import filter_expenses
 from expense_tracker.actions import add_expense, delete_expense
 
