@@ -1,6 +1,9 @@
 from .storage import save_csv
 from .logbook import log_action
 from .budget import check_budget
+from rich.console import Console
+
+console = Console()
 
 
 def add_expense(expenses, expense_id, amount, category, description, expense_date):
@@ -19,7 +22,7 @@ def add_expense(expenses, expense_id, amount, category, description, expense_dat
     
     warning = check_budget(category, expenses)
     if warning:
-        print(f"\n{warning}\n")
+        console.print(f"\n{warning}")
 
 
 def edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date):

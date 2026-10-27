@@ -1,14 +1,30 @@
+from rich.console import Console
+from rich.table import Table
+
+console = Console()
+
 def view_expense(expenses, empty_message="No expenses recorded yet."):
     if not expenses:
-        print(empty_message)
+        console.print(f"[yellow]{empty_message}[/yellow]")
         return
+
+    table = Table(title="Your Expenses", title_style="bold cyan")
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Date", style="magenta")
+    table.add_column("Category", style="green")
+    table.add_column("Amount", justify="right", style="bright_blue")
+    table.add_column("Description")
 
     for expense_id, details in expenses.items():
         d = details.get("Date") or "unknown"
-        print(
-            f"{expense_id}. {d} | {details['Category']} | "
-            f"{details['Amount']:.2f} | {details['Description']}"
+        table.add_row(
+            str(expense_id),
+            d,
+            details['Category'],
+            f"{details['Amount']:.2f}",
+            details['Description']
         )
+    console.print(table)
 
 
 def filter_expenses(expenses, start_date="", end_date="", category="", keyword=""):
@@ -32,27 +48,33 @@ def filter_expenses(expenses, start_date="", end_date="", category="", keyword="
 
 def summary(expenses):
     if not expenses:
-        print("No expenses recorded yet.")
+        console.print("[yellow]No expenses recorded yet.[/yellow]")
         return
 
     total = sum(d["Amount"] for d in expenses.values())
-    print(f"Total spent: {total:.2f}")
+    console.print(f"\n[bold]Total spent:[/bold] [bright_blue]{total:.2f}[/bright_blue]")
 
     dates = [d.get("Date") for d in expenses.values() if d.get("Date")]
     if dates:
-        print(f"Date range: {min(dates)} to {max(dates)}")
+        console.print(f"[bold]Date range:[/bold] {min(dates)} to {max(dates)}")
+
+    table = Table(title="Spending by Category", title_style="bold green")
+    table.add_column("Category", style="green")
+    table.add_column("Amount", justify="right", style="bright_blue")
 
     by_category = {}
     for d in expenses.values():
         by_category[d["Category"]] = by_category.get(d["Category"], 0.0) + d["Amount"]
 
     for category, amount in sorted(by_category.items()):
-        print(f"  {category}: {amount:.2f}")
+        table.add_row(category, f"{amount:.2f}")
+        
+    console.print(table)
 
 
 def monthly_summary(expenses):
     if not expenses:
-        print("No expenses recorded yet.")
+        console.print("[yellow]No expenses recorded yet.[/yellow]")
         return
 
     by_month = {}
@@ -75,29 +97,31 @@ def monthly_summary(expenses):
         )
 
     if not by_month:
-        print("No dated expenses to summarize.")
+        console.print("[yellow]No dated expenses to summarize.[/yellow]")
         return
 
-    print("\n--- Monthly Summary ---")
-    print(f"{'Month':<10} {'Expenses':>8} {'Total':>12}")
-    print("-" * 32)
+    table = Table(title="Monthly Summary", title_style="bold cyan")
+    table.add_column("Month", style="magenta")
+    table.add_column("Expenses", justify="right", style="green")
+    table.add_column("Total", justify="right", style="bright_blue")
 
     grand_total = 0.0
     grand_count = 0
     for month in sorted(by_month.keys()):
         info = by_month[month]
-        print(f"{month:<10} {info['_count']:>8} {info['_total']:>12.2f}")
+        table.add_row(month, str(info['_count']), f"{info['_total']:.2f}")
         grand_total += info["_total"]
         grand_count += info["_count"]
 
-    print("-" * 32)
-    print(f"{'TOTAL':<10} {grand_count:>8} {grand_total:>12.2f}")
+    table.add_section()
+    table.add_row("[bold]TOTAL[/bold]", f"[bold]{grand_count}[/bold]", f"[bold]{grand_total:.2f}[/bold]")
+    console.print(table)
 
     if undated:
         undated_total = sum(expenses[i]["Amount"] for i in undated)
-        print(
-            f"\n(+{len(undated)} expense(s) with unknown date, "
-            f"total {undated_total:.2f} — not included above)"
+        console.print(
+            f"\n[yellow](+{len(undated)} expense(s) with unknown date, "
+            f"total {undated_total:.2f} — not included above)[/yellow]"
         )
 
     month_choice = input(
@@ -107,11 +131,18 @@ def monthly_summary(expenses):
         return
 
     if month_choice not in by_month:
-        print(f"No data for {month_choice}.")
+        console.print(f"[red]No data for {month_choice}.[/red]")
         return
 
     info = by_month[month_choice]
-    print(f"\n--- {month_choice} breakdown ---")
+    
+    cat_table = Table(title=f"{month_choice} Breakdown", title_style="bold green")
+    cat_table.add_column("Category", style="green")
+    cat_table.add_column("Amount", justify="right", style="bright_blue")
+
     for category in sorted(info["categories"].keys()):
-        print(f"  {category}: {info['categories'][category]:.2f}")
-    print(f"  TOTAL: {info['_total']:.2f}")
+        cat_table.add_row(category, f"{info['categories'][category]:.2f}")
+
+    cat_table.add_section()
+    cat_table.add_row("[bold]TOTAL[/bold]", f"[bold]{info['_total']:.2f}[/bold]")
+    console.print(cat_table)

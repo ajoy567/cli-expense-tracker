@@ -2,6 +2,8 @@ import json
 import os
 from datetime import date
 from .config import BUDGET_FILE
+from rich.console import Console
+console = Console()
 
 def load_budgets():
     """Load budgets from JSON file."""
@@ -39,5 +41,5 @@ def check_budget(category, expenses):
     )
 
     if spent > budget_limit:
-        return f"WARNING: You have exceeded your {category} budget! (Spent: {spent:.2f}, Limit: {budget_limit:.2f})"
+        return f"[bold red] WARNING: You have exceeded your {category} budget! (Spent: {spent:.2f}, Limit: {budget_limit:.2f})[/bold red]"
     return None

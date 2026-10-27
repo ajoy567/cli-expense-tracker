@@ -1,4 +1,8 @@
 from datetime import date
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
 
 from expense_tracker.storage import load_csv
 from expense_tracker.budget import load_budgets, save_budgets, check_budget
@@ -14,17 +18,19 @@ from expense_tracker.prompts import (
 
 
 def show_menu():
-    print("\n------------------------------ Your Options ------------------------------")
-    print("1. Add Expense")
-    print("2. View Expense")
-    print("3. Search / Filter")
-    print("4. Summary")
-    print("5. Monthly Summary")
-    print("6. Recent Activity")
-    print("7. Set Monthly Budget")
-    print("8. Edit Expense")
-    print("9. Delete Expense")
-    print("10. Exit")
+    menu_text = (
+        "[1] Add Expense\n"
+        "[2] View Expense\n"
+        "[3] Search / Filter\n"
+        "[4] Summary\n"
+        "[5] Monthly Summary\n"
+        "[6] Recent Activity\n"
+        "[7] Set Budget\n"
+        "[8] Edit Expense\n"
+        "[9] Delete Expense\n"
+        "[10] Exit"
+    )
+    console.print(Panel(menu_text, title="Your Options", border_style="blue", padding=(1, 2)))
 
 
 def handle_add(expenses):
