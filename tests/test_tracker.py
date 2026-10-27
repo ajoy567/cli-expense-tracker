@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from expense_tracker.reports import filter_expenses
 from expense_tracker.actions import add_expense, delete_expense
+from expense_tracker.budget import check_budget
 
 
 @pytest.fixture
@@ -65,5 +66,20 @@ def test_delete_nonexistent_expense(mock_log, mock_save, sample_expenses):
     result = delete_expense(sample_expenses, 99)
     assert result is False
     mock_save.assert_not_called()
+    
+@patch('expense_tracker.budget.date')
+@patch('expense_tracker.budget.load_budgets')
+def test_budget_warning(mock_load_budgets, mock_date, sample_expenses):
+
+    mock_date.today.return_value.strftime.return_value = "2026-10"
+    
+    mock_load_budgets.return_value = {"Food": 150.0}
+    warning_under = check_budget("Food", sample_expenses)
+    assert warning_under is None
+    
+    mock_load_budgets.return_value = {"Food": 50.0}
+    warning_over = check_budget("Food", sample_expenses)
+    assert warning_over is not None
+    assert "exceeded your Food budget" in warning_over
     
     

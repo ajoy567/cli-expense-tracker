@@ -1,5 +1,6 @@
 from .storage import save_csv
 from .logbook import log_action
+from .budget import check_budget
 
 
 def add_expense(expenses, expense_id, amount, category, description, expense_date):
@@ -15,6 +16,10 @@ def add_expense(expenses, expense_id, amount, category, description, expense_dat
         f"id={expense_id} amount={amount:.2f} category={category} "
         f"date={expense_date or 'unknown'}",
     )
+    
+    warning = check_budget(category, expenses)
+    if warning:
+        print(f"\n{warning}\n")
 
 
 def edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date):

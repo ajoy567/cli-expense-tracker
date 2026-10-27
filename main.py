@@ -1,6 +1,7 @@
 from datetime import date
 
 from expense_tracker.storage import load_csv
+from expense_tracker.budget import load_budgets, save_budgets, check_budget
 from expense_tracker.logbook import view_recent_activity
 from expense_tracker.actions import add_expense, edit_expense, delete_expense
 from expense_tracker.reports import (
@@ -20,9 +21,10 @@ def show_menu():
     print("4. Summary")
     print("5. Monthly Summary")
     print("6. Recent Activity")
-    print("7. Edit Expense")
-    print("8. Delete Expense")
-    print("9. Exit")
+    print("7. Set Monthly Budget")
+    print("8. Edit Expense")
+    print("9. Delete Expense")
+    print("10. Exit")
 
 
 def handle_add(expenses):
@@ -117,6 +119,23 @@ def handle_delete(expenses):
         print("Expense deleted!")
     else:
         print("Delete cancelled.")
+        
+def handle_set_budget():
+    budgets = load_budgets()
+    print("\n--- Set Monthly Budget ---")
+    
+    if budgets:
+        for cat, amt in budgets.items():
+            print(f"  {cat}: {amt:.2f}")
+    else:
+        print("  (No budgets set yet)")
+        
+    category = prompt_non_empty("Enter category to set budget for : ")
+    amount = prompt_amount(f"Enter monthly budget for {category} : ")
+    
+    budgets[category] = amount
+    save_budgets(budgets)
+    print(f"Budget for {category} set to {amount:.2f}!")
 
 
 def main():
@@ -128,15 +147,25 @@ def main():
         choice = input("Enter your choice : ").strip()
 
         match choice:
-            case '1': handle_add(expenses)
-            case '2': view_expense(expenses)
-            case '3': handle_search(expenses)
-            case '4': summary(expenses)
-            case '5': monthly_summary(expenses)
-            case '6': view_recent_activity(10)
-            case '7': handle_edit(expenses)
-            case '8': handle_delete(expenses)
+            case '1':
+                handle_add(expenses)
+            case '2':
+                view_expense(expenses)
+            case '3':
+                handle_search(expenses)
+            case '4':
+                summary(expenses)
+            case '5':
+                monthly_summary(expenses)
+            case '6':
+                view_recent_activity(10)
+            case '7':
+                handle_set_budget()
+            case '8':
+                handle_edit(expenses)
             case '9':
+                handle_delete(expenses)
+            case '10':
                 print("Exiting the app. Goodbye!")
                 break
             case _:
