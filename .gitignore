@@ -5,3 +5,4 @@ __pycache__/
 venv/
 activity.log
 budget.json
+recurring.json

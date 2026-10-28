@@ -1,6 +1,7 @@
 from datetime import date
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 
 console = Console()
 
@@ -8,6 +9,7 @@ from expense_tracker.storage import load_csv
 from expense_tracker.budget import load_budgets, save_budgets, check_budget
 from expense_tracker.logbook import view_recent_activity
 from expense_tracker.actions import add_expense, edit_expense, delete_expense
+from expense_tracker.recurring import load_recurring, save_recurring, process_recurring
 from expense_tracker.reports import (
     view_expense, summary, monthly_summary, filter_expenses,
 )
@@ -26,9 +28,10 @@ def show_menu():
         "[5] Monthly Summary\n"
         "[6] Recent Activity\n"
         "[7] Set Budget\n"
-        "[8] Edit Expense\n"
-        "[9] Delete Expense\n"
-        "[10] Exit"
+        "[8] Manage Recurring\n"
+        "[9] Edit Expense\n"
+        "[10] Delete Expense\n"
+        "[11] Exit"
     )
     console.print(Panel(menu_text, title="Your Options", border_style="blue", padding=(1, 2)))
 
@@ -144,8 +147,80 @@ def handle_set_budget():
     print(f"Budget for {category} set to {amount:.2f}!")
 
 
+def handle_manage_recurring():
+    while True:
+        rules = load_recurring()
+        console.print("\n[bold cyan]--- Manage Recurring Expenses ---[/bold cyan]")
+        
+        if rules:
+            table = Table()
+            table.add_column("ID", style="cyan")
+            table.add_column("Day", style="magenta")
+            table.add_column("Amount", style="bright_blue")
+            table.add_column("Category", style="green")
+            table.add_column("Description")
+            table.add_column("Last Added", style="yellow")
+            
+            for i, rule in enumerate(rules, 1):
+                table.add_row(
+                    str(i), str(rule["day"]), f"{rule['amount']:.2f}", 
+                    rule["category"], rule["description"], rule.get("last_added", "Never")
+                )
+            console.print(table)
+        else:
+            console.print("[yellow]No recurring expenses set up.[/yellow]")
+
+        print("\n1. Add Recurring Rule")
+        print("2. Delete Recurring Rule")
+        print("3. Back to Main Menu")
+        choice = input("Choice : ").strip()
+
+        if choice == "1":
+            amount = prompt_amount("Enter amount : ")
+            category = prompt_non_empty("Enter category : ")
+            description = prompt_non_empty("Enter description : ")
+            while True:
+                try:
+                    day = int(input("Enter day of month (1-31) : "))
+                    if 1 <= day <= 31:
+                        break
+                    print("Day must be between 1 and 31.")
+                except ValueError:
+                    print("Invalid number.")
+            
+            rules.append({
+                "amount": amount,
+                "category": category,
+                "description": description,
+                "day": day,
+                "last_added": ""
+            })
+            save_recurring(rules)
+            console.print("[green]Recurring rule added![/green]")
+            
+        elif choice == "2":
+            if not rules:
+                continue
+            idx_str = input("Enter the ID to delete : ")
+            try:
+                idx = int(idx_str) - 1
+                if 0 <= idx < len(rules):
+                    removed = rules.pop(idx)
+                    save_recurring(rules)
+                    console.print(f"[green]Removed {removed['description']}[/green]")
+                else:
+                    console.print("[red]Invalid ID.[/red]")
+            except ValueError:
+                console.print("[red]Please enter a valid number.[/red]")
+                
+        elif choice == "3":
+            break
+
+
 def main():
     expenses = load_csv()
+    process_recurring(expenses)
+    
     print("\nCLI EXPENSE TRACKER")
 
     while True:
@@ -168,10 +243,12 @@ def main():
             case '7':
                 handle_set_budget()
             case '8':
-                handle_edit(expenses)
+                handle_manage_recurring()
             case '9':
-                handle_delete(expenses)
+                handle_edit(expenses)
             case '10':
+                handle_delete(expenses)
+            case '11':
                 print("Exiting the app. Goodbye!")
                 break
             case _:

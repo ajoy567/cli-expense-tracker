@@ -4,6 +4,7 @@ from unittest.mock import patch
 from expense_tracker.reports import filter_expenses
 from expense_tracker.actions import add_expense, delete_expense
 from expense_tracker.budget import check_budget
+from expense_tracker.recurring import process_recurring
 
 
 @pytest.fixture
@@ -23,7 +24,6 @@ def test_filter_by_category(sample_expenses):
     assert 2 not in results
 
 def test_filter_by_date_range(sample_expenses):
-    # Should only pick up the October expense
     results = filter_expenses(sample_expenses, start_date="2026-10-01", end_date="2026-10-31")
     assert len(results) == 2
     assert 2 in results
@@ -82,4 +82,26 @@ def test_budget_warning(mock_load_budgets, mock_date, sample_expenses):
     assert warning_over is not None
     assert "exceeded your Food budget" in warning_over
     
+
+@patch('expense_tracker.recurring.date')
+@patch('expense_tracker.recurring.load_recurring')
+@patch('expense_tracker.recurring.save_recurring')
+@patch('expense_tracker.recurring.save_csv')
+@patch('expense_tracker.recurring.log_action')
+def test_process_recurring(mock_log, mock_save_csv, mock_save_recurring, mock_load_recurring, mock_date, sample_expenses):
+    mock_date.today.return_value.strftime.return_value = "2026-10"
+    mock_date.today.return_value.day = 5
+
+    mock_load_recurring.return_value = [
+        {"amount": 5000.0, "category": "Rent", "description": "Monthly Rent", "day": 1, "last_added": ""}
+    ]
+
+    process_recurring(sample_expenses)
+
+    assert 4 in sample_expenses
+    assert sample_expenses[4]["Amount"] == 5000.0
+    assert sample_expenses[4]["Category"] == "Rent"
+    assert sample_expenses[4]["Date"] == "2026-10-01"
     
+    mock_save_csv.assert_called_once()
+    mock_save_recurring.assert_called_once()
