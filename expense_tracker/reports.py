@@ -3,10 +3,20 @@ from rich.table import Table
 
 console = Console()
 
-def view_expense(expenses, empty_message="No expenses recorded yet."):
+def view_expense(expenses, empty_message="No expenses recorded yet.", sort_by="none"):
     if not expenses:
         console.print(f"[yellow]{empty_message}[/yellow]")
         return
+
+    sorted_items = list(expenses.items())
+    if sort_by == "date":
+        # Newest date first
+        sorted_items.sort(key=lambda item: item[1].get("Date", ""), reverse=True)
+    elif sort_by == "amount":
+        # Highest amount first
+        sorted_items.sort(key=lambda item: item[1]["Amount"], reverse=True)
+    elif sort_by == "category":
+        sorted_items.sort(key=lambda item: item[1]["Category"].lower())
 
     table = Table(title="Your Expenses", title_style="bold cyan")
     table.add_column("ID", style="cyan", no_wrap=True)
@@ -15,7 +25,7 @@ def view_expense(expenses, empty_message="No expenses recorded yet."):
     table.add_column("Amount", justify="right", style="bright_blue")
     table.add_column("Description")
 
-    for expense_id, details in expenses.items():
+    for expense_id, details in sorted_items:
         d = details.get("Date") or "unknown"
         table.add_row(
             str(expense_id),

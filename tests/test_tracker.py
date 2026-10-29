@@ -105,3 +105,11 @@ def test_process_recurring(mock_log, mock_save_csv, mock_save_recurring, mock_lo
     
     mock_save_csv.assert_called_once()
     mock_save_recurring.assert_called_once()
+    
+def test_view_expense_sorting(sample_expenses):
+    from expense_tracker.reports import view_expense
+
+    view_expense(sample_expenses, sort_by="date")
+    view_expense(sample_expenses, sort_by="amount")
+    view_expense(sample_expenses, sort_by="category")
+    

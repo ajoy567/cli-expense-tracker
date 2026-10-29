@@ -215,6 +215,31 @@ def handle_manage_recurring():
                 
         elif choice == "3":
             break
+        
+        
+def handle_view(expenses):
+    if not expenses:
+        console.print("[yellow]No expenses recorded yet.[/yellow]")
+        return
+        
+    console.print("\n[bold cyan]Sort expenses by:[/bold cyan]")
+    console.print("[1] Date (Newest first)")
+    console.print("[2] Amount (Highest first)")
+    console.print("[3] Category (A-Z)")
+    console.print("[4] Default (Order added)")
+    
+    choice = input("Choice (default=1) : ").strip()
+    
+    if choice == '2':
+        sort_by = "amount"
+    elif choice == '3':
+        sort_by = "category"
+    elif choice == '4':
+        sort_by = "none"
+    else:
+        sort_by = "date"
+        
+    view_expense(expenses, sort_by=sort_by)
 
 
 def main():
@@ -231,7 +256,7 @@ def main():
             case '1':
                 handle_add(expenses)
             case '2':
-                view_expense(expenses)
+                handle_view(expenses)
             case '3':
                 handle_search(expenses)
             case '4':
