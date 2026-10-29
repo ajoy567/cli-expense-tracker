@@ -5,6 +5,7 @@ from expense_tracker.reports import filter_expenses
 from expense_tracker.actions import add_expense, delete_expense
 from expense_tracker.budget import check_budget
 from expense_tracker.recurring import process_recurring
+from expense_tracker.reports import build_bar
 
 
 @pytest.fixture
@@ -112,4 +113,9 @@ def test_view_expense_sorting(sample_expenses):
     view_expense(sample_expenses, sort_by="date")
     view_expense(sample_expenses, sort_by="amount")
     view_expense(sample_expenses, sort_by="category")
-    
+
+def test_build_bar():
+    assert "█" * 20 in build_bar(100, 100)
+    assert "█" * 10 in build_bar(50, 100)
+    assert build_bar(0, 0) == ""
+    assert "█" * 1 in build_bar(1, 1000)

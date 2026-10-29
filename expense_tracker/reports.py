@@ -3,6 +3,15 @@ from rich.table import Table
 
 console = Console()
 
+def build_bar(amount, max_amount, width=20):
+    """Creates an ASCII bar chart string."""
+    if max_amount <= 0:
+        return ""
+    blocks = int((amount / max_amount) * width)
+    if blocks == 0 and amount > 0:
+        blocks = 1
+    return "[bright_green]" + ("█" * blocks) + "[/bright_green]"
+
 def view_expense(expenses, empty_message="No expenses recorded yet.", sort_by="none"):
     if not expenses:
         console.print(f"[yellow]{empty_message}[/yellow]")
@@ -10,10 +19,8 @@ def view_expense(expenses, empty_message="No expenses recorded yet.", sort_by="n
 
     sorted_items = list(expenses.items())
     if sort_by == "date":
-        # Newest date first
         sorted_items.sort(key=lambda item: item[1].get("Date", ""), reverse=True)
     elif sort_by == "amount":
-        # Highest amount first
         sorted_items.sort(key=lambda item: item[1]["Amount"], reverse=True)
     elif sort_by == "category":
         sorted_items.sort(key=lambda item: item[1]["Category"].lower())
@@ -68,16 +75,20 @@ def summary(expenses):
     if dates:
         console.print(f"[bold]Date range:[/bold] {min(dates)} to {max(dates)}")
 
-    table = Table(title="Spending by Category", title_style="bold green")
-    table.add_column("Category", style="green")
-    table.add_column("Amount", justify="right", style="bright_blue")
-
     by_category = {}
     for d in expenses.values():
         by_category[d["Category"]] = by_category.get(d["Category"], 0.0) + d["Amount"]
 
+    max_amount = max(by_category.values()) if by_category else 0
+
+    table = Table(title="Spending by Category", title_style="bold green")
+    table.add_column("Category", style="green")
+    table.add_column("Amount", justify="right", style="bright_blue")
+    table.add_column("Visual", style="bright_green")
+
     for category, amount in sorted(by_category.items()):
-        table.add_row(category, f"{amount:.2f}")
+        bar = build_bar(amount, max_amount)
+        table.add_row(category, f"{amount:.2f}", bar)
         
     console.print(table)
 
@@ -149,10 +160,15 @@ def monthly_summary(expenses):
     cat_table = Table(title=f"{month_choice} Breakdown", title_style="bold green")
     cat_table.add_column("Category", style="green")
     cat_table.add_column("Amount", justify="right", style="bright_blue")
+    cat_table.add_column("Visual", style="bright_green")
+
+    max_cat_amount = max(info["categories"].values()) if info["categories"] else 0
 
     for category in sorted(info["categories"].keys()):
-        cat_table.add_row(category, f"{info['categories'][category]:.2f}")
+        amt = info["categories"][category]
+        bar = build_bar(amt, max_cat_amount) # NEW
+        cat_table.add_row(category, f"{amt:.2f}", bar)
 
     cat_table.add_section()
-    cat_table.add_row("[bold]TOTAL[/bold]", f"[bold]{info['_total']:.2f}[/bold]")
+    cat_table.add_row("[bold]TOTAL[/bold]", f"[bold]{info['_total']:.2f}[/bold]", "")
     console.print(cat_table)
