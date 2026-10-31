@@ -1,10 +1,9 @@
-from .storage import save_csv
+from .storage import save_db
 from .logbook import log_action
 from .budget import check_budget
 from rich.console import Console
 
 console = Console()
-
 
 def add_expense(expenses, expense_id, amount, category, description, expense_date):
     expenses[expense_id] = {
@@ -13,7 +12,7 @@ def add_expense(expenses, expense_id, amount, category, description, expense_dat
         "Description": description,
         "Date": expense_date,
     }
-    save_csv(expenses)
+    save_db(expenses)
     log_action(
         "ADD",
         f"id={expense_id} amount={amount:.2f} category={category} "
@@ -24,10 +23,8 @@ def add_expense(expenses, expense_id, amount, category, description, expense_dat
     if warning:
         console.print(f"\n{warning}")
 
-
 def edit_expense(expenses, expense_id, new_amount, new_category, new_description, new_date):
     old = expenses.get(expense_id, {})
-
     changes = []
     if round(old.get("Amount", 0.0), 2) != round(new_amount, 2):
         changes.append(f"amount {old.get('Amount', 0.0):.2f} -> {new_amount:.2f}")
@@ -44,16 +41,18 @@ def edit_expense(expenses, expense_id, new_amount, new_category, new_description
         "Description": new_description,
         "Date": new_date,
     }
-    save_csv(expenses)
+    save_db(expenses)
 
-    log_action("EDIT", f"id={expense_id} " + ("; ".join(changes) if changes else "(no changes)"))
-
+    if changes:
+        log_action("EDIT", f"id={expense_id} " + "; ".join(changes))
+    else:
+        log_action("EDIT", f"id={expense_id} (no changes)")
 
 def delete_expense(expenses, expense_id):
     if expense_id in expenses:
         old = expenses[expense_id]
         del expenses[expense_id]
-        save_csv(expenses)
+        save_db(expenses)
         log_action(
             "DELETE",
             f"id={expense_id} amount={old['Amount']:.2f} category={old['Category']} "

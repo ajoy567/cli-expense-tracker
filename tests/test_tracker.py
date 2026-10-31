@@ -1,6 +1,9 @@
 import pytest  
 from unittest.mock import patch
 
+import sqlite3
+import os
+
 from expense_tracker.reports import filter_expenses
 from expense_tracker.actions import add_expense, delete_expense
 from expense_tracker.budget import check_budget
@@ -36,7 +39,7 @@ def test_filter_by_keyword(sample_expenses):
     assert 1 in results
 
 
-@patch('expense_tracker.actions.save_csv')
+@patch('expense_tracker.actions.save_db')
 @patch('expense_tracker.actions.log_action')
 def test_add_expense(mock_log, mock_save, sample_expenses):
     add_expense(sample_expenses, 4, 25.0, "Snacks", "Chips", "2026-10-23")
@@ -48,8 +51,7 @@ def test_add_expense(mock_log, mock_save, sample_expenses):
     mock_save.assert_called_once()
     mock_log.assert_called_once()
 
-
-@patch('expense_tracker.actions.save_csv')
+@patch('expense_tracker.actions.save_db')
 @patch('expense_tracker.actions.log_action')
 def test_delete_expense(mock_log, mock_save, sample_expenses):
     assert 1 in sample_expenses
@@ -61,13 +63,14 @@ def test_delete_expense(mock_log, mock_save, sample_expenses):
     mock_save.assert_called_once()
     mock_log.assert_called_once()
 
-@patch('expense_tracker.actions.save_csv')
+@patch('expense_tracker.actions.save_db')
 @patch('expense_tracker.actions.log_action')
 def test_delete_nonexistent_expense(mock_log, mock_save, sample_expenses):
     result = delete_expense(sample_expenses, 99)
     assert result is False
     mock_save.assert_not_called()
     
+
 @patch('expense_tracker.budget.date')
 @patch('expense_tracker.budget.load_budgets')
 def test_budget_warning(mock_load_budgets, mock_date, sample_expenses):
@@ -87,9 +90,9 @@ def test_budget_warning(mock_load_budgets, mock_date, sample_expenses):
 @patch('expense_tracker.recurring.date')
 @patch('expense_tracker.recurring.load_recurring')
 @patch('expense_tracker.recurring.save_recurring')
-@patch('expense_tracker.recurring.save_csv')
+@patch('expense_tracker.recurring.save_db') 
 @patch('expense_tracker.recurring.log_action')
-def test_process_recurring(mock_log, mock_save_csv, mock_save_recurring, mock_load_recurring, mock_date, sample_expenses):
+def test_process_recurring(mock_log, mock_save_db, mock_save_recurring, mock_load_recurring, mock_date, sample_expenses):
     mock_date.today.return_value.strftime.return_value = "2026-10"
     mock_date.today.return_value.day = 5
 
@@ -104,9 +107,10 @@ def test_process_recurring(mock_log, mock_save_csv, mock_save_recurring, mock_lo
     assert sample_expenses[4]["Category"] == "Rent"
     assert sample_expenses[4]["Date"] == "2026-10-01"
     
-    mock_save_csv.assert_called_once()
+    mock_save_db.assert_called_once()
     mock_save_recurring.assert_called_once()
     
+
 def test_view_expense_sorting(sample_expenses):
     from expense_tracker.reports import view_expense
 
@@ -120,6 +124,7 @@ def test_build_bar():
     assert build_bar(0, 0) == ""
     assert "█" * 1 in build_bar(1, 1000)
     
+
 def test_export_month_to_markdown(sample_expenses, tmp_path):
     from expense_tracker.exporter import export_month_to_markdown
     
@@ -135,7 +140,23 @@ def test_export_month_to_markdown(sample_expenses, tmp_path):
         assert "# Expense Report: 2026-10" in content
         assert "| Food | 100.00 |" in content
         assert "| 2 | 2026-10-15 | Transport | 50.00 | Bus ticket |" in content
-
         assert "Groceries" not in content
         
+
+def test_sqlite_storage(sample_expenses, tmp_path):
+    from expense_tracker.storage import save_db, load_db, init_db
+    
+    temp_db_path = tmp_path / "test_expenses.db"
+    temp_csv_path = tmp_path / "fake_expenses.csv"
+    
+    with patch('expense_tracker.storage.DB_FILE', str(temp_db_path)):
+        with patch('expense_tracker.storage.CSV_FILE', str(temp_csv_path)):
+            init_db()
+            save_db(sample_expenses)
+            loaded = load_db()
+            
+            assert len(loaded) == 3
+            assert loaded[1]["Amount"] == 100.0
+            assert loaded[2]["Category"] == "Transport"
+            assert loaded[3]["Description"] == "Groceries"
         

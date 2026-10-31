@@ -1,0 +1,5 @@
+ID,Amount,Category,Description,Date
+2,14.00,food,chai & sutta,2026-10-17
+3,127.00,food,biriyani,2026-10-22
+4,110.00,food,dinner,2026-10-22
+5,5000.00,food,Expense for food should not cross 5000 (Recurring),2026-10-01

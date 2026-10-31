@@ -7,3 +7,4 @@ activity.log
 budget.json
 recurring.json
 report_*.md
+expense_tracker.db

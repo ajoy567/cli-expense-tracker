@@ -5,7 +5,7 @@ from rich.table import Table
 
 console = Console()
 
-from expense_tracker.storage import load_csv
+from expense_tracker.storage import load_db
 from expense_tracker.budget import load_budgets, save_budgets, check_budget
 from expense_tracker.logbook import view_recent_activity
 from expense_tracker.actions import add_expense, edit_expense, delete_expense
@@ -256,7 +256,7 @@ def handle_export(expenses):
 
 
 def main():
-    expenses = load_csv()
+    expenses = load_db()
     process_recurring(expenses)
     
     print("\nCLI EXPENSE TRACKER")

@@ -2,7 +2,7 @@ import json
 import os
 from datetime import date
 from .config import RECURRING_FILE
-from .storage import save_csv
+from .storage import save_db
 from .logbook import log_action
 from rich.console import Console
 
@@ -22,7 +22,6 @@ def save_recurring(rules):
         json.dump(rules, file, indent=4)
 
 def process_recurring(expenses):
-    """Checks if any recurring expenses are due today and adds them."""
     rules = load_recurring()
     if not rules:
         return
@@ -38,7 +37,6 @@ def process_recurring(expenses):
 
         if current_day >= rule["day"]:
             expense_id = max(expenses.keys(), default=0) + 1
-            
             expense_date = f"{current_month}-{rule['day']:02d}"
             
             expenses[expense_id] = {
@@ -54,6 +52,6 @@ def process_recurring(expenses):
             log_action("ADD", f"id={expense_id} amount={rule['amount']:.2f} category={rule['category']} date={expense_date} (Auto-Recurring)")
 
     if added_count > 0:
-        save_csv(expenses)
+        save_db(expenses)
         save_recurring(rules)
         console.print(f"\n[bold green]✨ Auto-added {added_count} recurring expense(s) for this month![/bold green]")
