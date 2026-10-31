@@ -6,3 +6,4 @@ venv/
 activity.log
 budget.json
 recurring.json
+report_*.md

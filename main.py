@@ -10,6 +10,7 @@ from expense_tracker.budget import load_budgets, save_budgets, check_budget
 from expense_tracker.logbook import view_recent_activity
 from expense_tracker.actions import add_expense, edit_expense, delete_expense
 from expense_tracker.recurring import load_recurring, save_recurring, process_recurring
+from expense_tracker.exporter import export_month_to_markdown
 from expense_tracker.reports import (
     view_expense, summary, monthly_summary, filter_expenses,
 )
@@ -31,7 +32,8 @@ def show_menu():
         "[8] Manage Recurring\n"
         "[9] Edit Expense\n"
         "[10] Delete Expense\n"
-        "[11] Exit"
+        "[11] Export Report\n"
+        "[12] Exit"
     )
     console.print(Panel(menu_text, title="Your Options", border_style="blue", padding=(1, 2)))
 
@@ -242,6 +244,17 @@ def handle_view(expenses):
     view_expense(expenses, sort_by=sort_by)
 
 
+def handle_export(expenses):
+    month = input("Enter the month to export (YYYY-MM) : ").strip()
+    if not month:
+        return
+        
+    filename = export_month_to_markdown(expenses, month)
+    if filename:
+        console.print(f"\n[bold green]✅ Report successfully saved to {filename}[/bold green]")
+        console.print(f"Open [cyan]{filename}[/cyan] in VS Code to view it!")
+
+
 def main():
     expenses = load_csv()
     process_recurring(expenses)
@@ -274,6 +287,8 @@ def main():
             case '10':
                 handle_delete(expenses)
             case '11':
+                handle_export(expenses)
+            case '12':
                 print("Exiting the app. Goodbye!")
                 break
             case _:

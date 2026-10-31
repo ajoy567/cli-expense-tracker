@@ -119,3 +119,23 @@ def test_build_bar():
     assert "█" * 10 in build_bar(50, 100)
     assert build_bar(0, 0) == ""
     assert "█" * 1 in build_bar(1, 1000)
+    
+def test_export_month_to_markdown(sample_expenses, tmp_path):
+    from expense_tracker.exporter import export_month_to_markdown
+    
+    with patch('expense_tracker.exporter.BASE_DIR', str(tmp_path)):
+        filename = export_month_to_markdown(sample_expenses, "2026-10")
+        
+        assert filename == "report_2026-10.md"
+        
+        filepath = tmp_path / filename
+        assert filepath.exists()
+        
+        content = filepath.read_text(encoding="utf-8")
+        assert "# Expense Report: 2026-10" in content
+        assert "| Food | 100.00 |" in content
+        assert "| 2 | 2026-10-15 | Transport | 50.00 | Bus ticket |" in content
+
+        assert "Groceries" not in content
+        
+        
