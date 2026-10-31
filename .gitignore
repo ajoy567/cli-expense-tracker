@@ -8,3 +8,4 @@ budget.json
 recurring.json
 report_*.md
 expense_tracker.db
+expense_tracker.csv.bak
