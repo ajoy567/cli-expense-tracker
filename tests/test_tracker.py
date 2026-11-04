@@ -39,9 +39,10 @@ def test_filter_by_keyword(sample_expenses):
     assert 1 in results
 
 
+@patch('expense_tracker.actions.check_budget')
 @patch('expense_tracker.actions.save_db')
 @patch('expense_tracker.actions.log_action')
-def test_add_expense(mock_log, mock_save, sample_expenses):
+def test_add_expense(mock_log, mock_save, mock_check_budget, sample_expenses):
     add_expense(sample_expenses, 4, 25.0, "Snacks", "Chips", "2026-10-23")
     
     assert 4 in sample_expenses
