@@ -87,17 +87,17 @@ def test_budget_warning(mock_load_budgets, mock_date, sample_expenses):
     assert "exceeded your Food budget" in warning_over
     
 
+@patch('expense_tracker.recurring.get_connection')
 @patch('expense_tracker.recurring.date')
 @patch('expense_tracker.recurring.load_recurring')
-@patch('expense_tracker.recurring.save_recurring')
 @patch('expense_tracker.recurring.save_db') 
 @patch('expense_tracker.recurring.log_action')
-def test_process_recurring(mock_log, mock_save_db, mock_save_recurring, mock_load_recurring, mock_date, sample_expenses):
+def test_process_recurring(mock_log, mock_save_db, mock_load_recurring, mock_date, mock_get_conn, sample_expenses):
     mock_date.today.return_value.strftime.return_value = "2026-10"
     mock_date.today.return_value.day = 5
 
     mock_load_recurring.return_value = [
-        {"amount": 5000.0, "category": "Rent", "description": "Monthly Rent", "day": 1, "last_added": ""}
+        {"id": 1, "amount": 5000.0, "category": "Rent", "description": "Monthly Rent", "day": 1, "last_added": ""}
     ]
 
     process_recurring(sample_expenses)
@@ -108,7 +108,7 @@ def test_process_recurring(mock_log, mock_save_db, mock_save_recurring, mock_loa
     assert sample_expenses[4]["Date"] == "2026-10-01"
     
     mock_save_db.assert_called_once()
-    mock_save_recurring.assert_called_once()
+    mock_get_conn.assert_called_once()
     
 
 def test_view_expense_sorting(sample_expenses):

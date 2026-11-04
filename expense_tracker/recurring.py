@@ -1,27 +1,45 @@
-import json
-import os
 from datetime import date
-from .config import RECURRING_FILE
-from .storage import save_db
+from .storage import get_connection, save_db
 from .logbook import log_action
 from rich.console import Console
 
 console = Console()
 
 def load_recurring():
-    if not os.path.exists(RECURRING_FILE):
-        return []
-    try:
-        with open(RECURRING_FILE, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except json.JSONDecodeError:
-        return []
+    """
+    Load recurring rules from SQLite.
+    """
+    rules = []
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, amount, category, description, day, last_added FROM recurring_rules")
+        for row in cursor.fetchall():
+            rules.append({
+                "id": row["id"],
+                "amount": row["amount"],
+                "category": row["category"],
+                "description": row["description"],
+                "day": row["day"],
+                "last_added": row["last_added"]
+            })
+    return rules
 
 def save_recurring(rules):
-    with open(RECURRING_FILE, "w", encoding="utf-8") as file:
-        json.dump(rules, file, indent=4)
+    """
+    Save rules to SQLite. (Kept for backwards compatibility, though not strictly needed now).
+    """
+    with get_connection() as conn:
+        conn.execute("DELETE FROM recurring_rules")
+        for rule in rules:
+            conn.execute(
+                "INSERT INTO recurring_rules (amount, category, description, day, last_added) VALUES (?, ?, ?, ?, ?)",
+                (rule["amount"], rule["category"], rule["description"], rule["day"], rule.get("last_added", ""))
+            )
 
 def process_recurring(expenses):
+    """
+    Checks if any recurring expenses are due today and adds them.
+    """
     rules = load_recurring()
     if not rules:
         return
@@ -31,27 +49,30 @@ def process_recurring(expenses):
     current_day = today.day
     added_count = 0
 
-    for rule in rules:
-        if rule.get("last_added") == current_month:
-            continue
+    with get_connection() as conn:
+        for rule in rules:
+            if rule.get("last_added") == current_month:
+                continue
 
-        if current_day >= rule["day"]:
-            expense_id = max(expenses.keys(), default=0) + 1
-            expense_date = f"{current_month}-{rule['day']:02d}"
-            
-            expenses[expense_id] = {
-                "Amount": rule["amount"],
-                "Category": rule["category"],
-                "Description": f"{rule['description']} (Recurring)",
-                "Date": expense_date
-            }
-            
-            rule["last_added"] = current_month
-            added_count += 1
-            
-            log_action("ADD", f"id={expense_id} amount={rule['amount']:.2f} category={rule['category']} date={expense_date} (Auto-Recurring)")
+            if current_day >= rule["day"]:
+                expense_id = max(expenses.keys(), default=0) + 1
+                expense_date = f"{current_month}-{rule['day']:02d}"
+                
+                expenses[expense_id] = {
+                    "Amount": rule["amount"],
+                    "Category": rule["category"],
+                    "Description": f"{rule['description']} (Recurring)",
+                    "Date": expense_date
+                }
+                
+                conn.execute(
+                    "UPDATE recurring_rules SET last_added = ? WHERE id = ?",
+                    (current_month, rule["id"])
+                )
+                added_count += 1
+                
+                log_action("ADD", f"id={expense_id} amount={rule['amount']:.2f} category={rule['category']} date={expense_date} (Auto-Recurring)")
 
     if added_count > 0:
         save_db(expenses)
-        save_recurring(rules)
-        console.print(f"\n[bold green]✨ Auto-added {added_count} recurring expense(s) for this month![/bold green]")
+        console.print(f"\n[bold green] Auto-added {added_count} recurring expense(s) for this month![/bold green]")
