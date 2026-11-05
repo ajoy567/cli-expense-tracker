@@ -46,3 +46,11 @@ def check_budget(category, expenses):
     if spent > budget_limit:
         return f"[bold red] WARNING: You have exceeded your {category} budget! (Spent: {spent:.2f}, Limit: {budget_limit:.2f})[/bold red]"
     return None
+
+def delete_budget(category):
+    """
+    Deletes a budget for a specific category.
+    """
+    with get_connection() as conn:
+        conn.execute("DELETE FROM budgets WHERE category = ?", (category,))
+        

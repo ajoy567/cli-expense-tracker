@@ -76,3 +76,10 @@ def process_recurring(expenses):
     if added_count > 0:
         save_db(expenses)
         console.print(f"\n[bold green] Auto-added {added_count} recurring expense(s) for this month![/bold green]")
+        
+def delete_recurring(rule_id):
+    """
+    Deletes a recurring rule by its database ID.
+    """
+    with get_connection() as conn:
+        conn.execute("DELETE FROM recurring_rules WHERE id = ?", (rule_id,))

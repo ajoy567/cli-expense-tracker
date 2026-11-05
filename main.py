@@ -6,10 +6,10 @@ from rich.table import Table
 console = Console()
 
 from expense_tracker.storage import load_db
-from expense_tracker.budget import load_budgets, save_budgets, check_budget
+from expense_tracker.budget import load_budgets, save_budgets, check_budget, delete_budget
 from expense_tracker.logbook import view_recent_activity
 from expense_tracker.actions import add_expense, edit_expense, delete_expense
-from expense_tracker.recurring import load_recurring, save_recurring, process_recurring
+from expense_tracker.recurring import load_recurring, save_recurring, process_recurring, delete_recurring
 from expense_tracker.exporter import export_month_to_markdown
 from expense_tracker.reports import (
     view_expense, summary, monthly_summary, filter_expenses,
@@ -133,20 +133,41 @@ def handle_delete(expenses):
         
 def handle_set_budget():
     budgets = load_budgets()
-    print("\n--- Set Monthly Budget ---")
     
+    console.print("\n[bold cyan]--- Manage Budgets ---[/bold cyan]")
     if budgets:
+        table = Table(title="Current Monthly Budgets")
+        table.add_column("Category", style="green")
+        table.add_column("Limit", style="bright_blue")
         for cat, amt in budgets.items():
-            print(f"  {cat}: {amt:.2f}")
+            table.add_row(cat, f"{amt:.2f}")
+        console.print(table)
     else:
-        print("  (No budgets set yet)")
+        console.print("[yellow](No budgets set yet)[/yellow]")
+
+    console.print("\n[1] Set / Update Budget")
+    console.print("[2] Delete Budget")
+    console.print("[3] Back to Main Menu")
+    choice = input("Choice : ").strip()
+
+    if choice == "1":
+        category = prompt_non_empty("Enter category to set budget for : ")
+        amount = prompt_amount(f"Enter monthly budget for {category} : ")
+        budgets[category] = amount
+        save_budgets(budgets)
+        console.print(f"[bold green]Budget for {category} set to {amount:.2f}![/bold green]")
         
-    category = prompt_non_empty("Enter category to set budget for : ")
-    amount = prompt_amount(f"Enter monthly budget for {category} : ")
-    
-    budgets[category] = amount
-    save_budgets(budgets)
-    print(f"Budget for {category} set to {amount:.2f}!")
+    elif choice == "2":
+        if not budgets:
+            console.print("[red]No budgets to delete.[/red]")
+            return
+        category = prompt_non_empty("Enter category to delete : ")
+        existing_cat = next((c for c in budgets if c.lower() == category.lower()), None)
+        if existing_cat:
+            delete_budget(existing_cat)
+            console.print(f"[bold green]Budget for {existing_cat} deleted![/bold green]")
+        else:
+            console.print(f"[red]No budget found for '{category}'.[/red]")
 
 
 def handle_manage_recurring():
@@ -163,10 +184,10 @@ def handle_manage_recurring():
             table.add_column("Description")
             table.add_column("Last Added", style="yellow")
             
-            for i, rule in enumerate(rules, 1):
+            for rule in rules:
                 table.add_row(
-                    str(i), str(rule["day"]), f"{rule['amount']:.2f}", 
-                    rule["category"], rule["description"], rule.get("last_added", "Never")
+                    str(rule["id"]), str(rule["day"]), f"{rule['amount']:.2f}", 
+                    rule["category"], rule["description"], rule.get("last_added") or "Never"
                 )
             console.print(table)
         else:
@@ -198,18 +219,17 @@ def handle_manage_recurring():
                 "last_added": ""
             })
             save_recurring(rules)
-            console.print("[green]Recurring rule added![/green]")
+            console.print("[bold green]Recurring rule added![/bold green]")
             
         elif choice == "2":
             if not rules:
                 continue
-            idx_str = input("Enter the ID to delete : ")
+            id_str = input("Enter the ID to delete : ")
             try:
-                idx = int(idx_str) - 1
-                if 0 <= idx < len(rules):
-                    removed = rules.pop(idx)
-                    save_recurring(rules)
-                    console.print(f"[green]Removed {removed['description']}[/green]")
+                rule_id = int(id_str)
+                if any(r["id"] == rule_id for r in rules):
+                    delete_recurring(rule_id)
+                    console.print("[bold green]Recurring rule deleted![/bold green]")
                 else:
                     console.print("[red]Invalid ID.[/red]")
             except ValueError:

@@ -160,4 +160,17 @@ def test_sqlite_storage(sample_expenses, tmp_path):
             assert loaded[1]["Amount"] == 100.0
             assert loaded[2]["Category"] == "Transport"
             assert loaded[3]["Description"] == "Groceries"
-        
+
+@patch('expense_tracker.budget.get_connection')
+def test_delete_budget(mock_get_conn):
+    from expense_tracker.budget import delete_budget
+    delete_budget("Food")
+    mock_conn = mock_get_conn.return_value.__enter__.return_value
+    mock_conn.execute.assert_called_once_with("DELETE FROM budgets WHERE category = ?", ("Food",))
+
+@patch('expense_tracker.recurring.get_connection')
+def test_delete_recurring(mock_get_conn):
+    from expense_tracker.recurring import delete_recurring
+    delete_recurring(1)
+    mock_conn = mock_get_conn.return_value.__enter__.return_value
+    mock_conn.execute.assert_called_once_with("DELETE FROM recurring_rules WHERE id = ?", (1,))
